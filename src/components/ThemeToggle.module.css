@@ -1,0 +1,35 @@
+.toggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--btn-bg, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-color, #475569);
+  transition: all 0.25s ease;
+}
+
+.toggleBtn:hover {
+  background: var(--btn-hover, #f1f5f9);
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.toggleBtn:hover .icon {
+  transform: rotate(15deg);
+}
+
+.label {
+  font-weight: 500;
+}

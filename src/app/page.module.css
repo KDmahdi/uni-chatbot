@@ -332,3 +332,120 @@
   margin-top: 0.75rem;
   text-align: center;
 }
+.logo{
+  width: 40px;
+  height: 50px;
+}
+
+
+
+
+
+
+/* ================================================= */
+/* تنظیمات حالت دارک مود (بدون دستکاری کدهای قبلی) */
+/* ================================================= */
+
+.container[data-theme="dark"] {
+  background-color: #0b0f19;
+  color: #f1f5f9;
+}
+
+.container[data-theme="dark"] .header {
+  background-color: rgba(15, 23, 42, 0.85);
+  border-bottom-color: #1e293b;
+}
+
+.container[data-theme="dark"] .brandTitle {
+  color: #f8fafc;
+}
+
+.container[data-theme="dark"] .resetBtn {
+  border-color: #334155;
+  color: #cbd5e1;
+  background-color: #1e293b;
+}
+
+.container[data-theme="dark"] .resetBtn:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+.container[data-theme="dark"] .welcomeTitle {
+  color: #f8fafc;
+}
+
+.container[data-theme="dark"] .welcomeSubtitle {
+  color: #94a3b8;
+}
+
+.container[data-theme="dark"] .tipLabel,
+.container[data-theme="dark"] .suggestionsTitle {
+  color: #cbd5e1;
+}
+
+.container[data-theme="dark"] .botAvatar {
+  background: #1e293b;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.container[data-theme="dark"] .card {
+  background: #131b2e;
+  border-color: #1e293b;
+}
+
+.container[data-theme="dark"] .card:hover {
+  border-color: #3b82f6;
+  background: #17233d;
+}
+
+.container[data-theme="dark"] .card h3 {
+  color: #f8fafc;
+}
+
+.container[data-theme="dark"] .card p {
+  color: #94a3b8;
+}
+
+.container[data-theme="dark"] .chip {
+  background: #131b2e;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.container[data-theme="dark"] .chip:hover {
+  background: #1e293b;
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.container[data-theme="dark"] .botBubble {
+  background: #131b2e;
+  color: #f1f5f9;
+  border-color: #1e293b;
+}
+
+.container[data-theme="dark"] .feedAvatar {
+  background: #1e293b;
+}
+
+.container[data-theme="dark"] .footer {
+  background: linear-gradient(to top, #0b0f19 80%, rgba(11, 15, 25, 0));
+}
+
+.container[data-theme="dark"] .inputContainer {
+  background: #131b2e;
+  border-color: #334155;
+}
+
+.container[data-theme="dark"] .inputBox {
+  color: #f8fafc;
+}
+
+.container[data-theme="dark"] .inputBox::placeholder {
+  color: #64748b;
+}
+
+.container[data-theme="dark"] .footerNote {
+  color: #64748b;
+}

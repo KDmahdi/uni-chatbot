@@ -1,83 +1,125 @@
 import { NextResponse } from "next/server";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
+import { supabase } from "@/lib/supabase";
 import coursesData from "@/data/razi_courses_1405-1406_term1.json";
 
-// ۱. تعریف تایپ‌ها (TypeScript Interfaces) برای اینکه ادیتور ساختار دیتای ما رو بشناسه
 interface Session {
-  kind: string;
-  is_tutorial: boolean;
+  kind?: string;
+  is_tutorial?: boolean;
   day: string;
-  start: string;
-  end: string;
-  week: string | null;
-  location: string | null;
+  start?: string;
+  end?: string;
+  start_time?: string;
+  end_time?: string;
+  week?: string | null;
+  location?: string | null;
 }
 
 interface Course {
-  id: string;
+  id?: string;
   course_code: string;
   group: string;
   course_name: string;
   department: string;
-  units: {
-    total: number;
-    practical: number;
-  };
+  units:
+    | {
+        total: number;
+        practical?: number;
+      }
+    | number;
   instructors: string[];
-  gender: string;
-  capacity: number;
-  enrolled: number;
-  waitlist: number;
+  gender?: string;
+  capacity?: number;
+  enrolled?: number;
+  waitlist?: number;
   sessions: Session[];
   exam: {
     date: string;
-    start: string;
-    end: string;
+    start?: string;
+    end?: string;
+    time?: string;
   } | null;
-  notes: string | null;
+  notes?: string | null;
 }
 
-// ۲. تابع کمکی برای یکدست کردن حروف فارسی و عربی (ی و ک)
 function normalizePersian(text: string): string {
-  return text
+  return String(text || "")
     .replace(/ي/g, "ی")
     .replace(/ك/g, "ک")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-// ۳. تابع جستجوی هوشمند در بین ۳۳۴ درس دانشگاه رازی
-function findRelevantCourses(userQuery: string): Course[] {
+function findRelevantCourses(userQuery: string, allCourses: Course[]): Course[] {
   const cleanQuery = normalizePersian(userQuery);
-  
-  // کلمات اضافه و روزمره رو حذف می‌کنیم تا فقط کلمات کلیدی (مثل اسم درس، استاد یا روز) بمونه
+
   const stopWords = [
-    "کلاس", "درس", "استاد", "دکتر", "ساعت", "چند", "کی", "کجاست", "کجا",
-    "روز", "چه", "دارم", "داریم", "ارائه", "میشه", "می‌شود", "است", "هست",
-    "برای", "در", "از", "به", "با", "را", "رو", "من", "ما", "لیست", "برنامه",
-    "شماره", "کد", "امتحان", "ظرفیت", "واحد", "گروه"
+    "کلاس",
+    "درس",
+    "استاد",
+    "دکتر",
+    "ساعت",
+    "چند",
+    "کی",
+    "کجاست",
+    "کجا",
+    "روز",
+    "چه",
+    "دارم",
+    "داریم",
+    "ارائه",
+    "میشه",
+    "می‌شود",
+    "است",
+    "هست",
+    "برای",
+    "در",
+    "از",
+    "به",
+    "با",
+    "را",
+    "رو",
+    "من",
+    "ما",
+    "لیست",
+    "برنامه",
+    "شماره",
+    "کد",
+    "امتحان",
+    "ظرفیت",
+    "واحد",
+    "گروه",
+    "سلام",
+    "خوبی",
+    "چطوری",
+    "چخبر",
+    "کمک",
+    "دانشگاه",
+    "رازی",
+    "ترم",
+    "چیه",
+    "چیست",
   ];
 
-  // جمله کاربر رو تکه تکه می‌کنیم (تبدیل جمله به آرایه‌ای از کلمات)
   const keywords = cleanQuery
     .split(/[\s،؟?.,!]+/)
     .filter((word) => word.length > 1 && !stopWords.includes(word));
 
-  const allCourses = coursesData.courses as Course[];
-
-  // اگر کاربر سوال کلی پرسیده بود (مثلاً "سلام" یا "راهنمایی کن")، ۱۰ درس اول رو به عنوان نمونه می‌دیم
   if (keywords.length === 0) {
-    return allCourses.slice(0, 10);
+    return [];
   }
 
-  // به هر درس بر اساس اینکه چقدر با کلمات کاربر تطابق داره امتیاز می‌دیم
   const scoredCourses = allCourses.map((course) => {
     let score = 0;
+    const instructorsText = Array.isArray(course.instructors)
+      ? course.instructors.join(" ")
+      : "";
+    const sessionsText = Array.isArray(course.sessions)
+      ? course.sessions.map((s) => `${s.day || ""} ${s.location || ""}`).join(" ")
+      : "";
 
-    // تمام اطلاعات یک درس رو به یک متن واحد تبدیل می‌کنیم تا راحت توش بگردیم
-    // نکته: instructors.join(" ") همون ترفندیه که تکه شدن اسم اساتید رو به هم می‌چسبونه!
     const searchableText = normalizePersian(
-      `${course.course_name} ${course.course_code} ${course.department} ${course.instructors.join(" ")} ${course.sessions.map((s) => `${s.day}${s.location}`).join(" ")}`
+      `${course.course_name || ""} ${course.course_code || ""} ${course.department || ""} ${instructorsText} ${sessionsText}`
     );
 
     for (const word of keywords) {
@@ -89,32 +131,27 @@ function findRelevantCourses(userQuery: string): Course[] {
     return { course, score };
   });
 
-  // درس‌هایی که حداقل ۱ امتیاز آوردن رو جدا می‌کنیم و از بیشترین امتیاز به کمترین مرتب می‌کنیم
   const matched = scoredCourses
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((item) => item.course);
 
-  // حداکثر ۲۵ درس اول رو برمی‌گردونیم تا پرامپت سبک و سریع بمونه
-  return matched.length > 0 ? matched.slice(0, 25) : allCourses.slice(0, 10);
+  return matched.slice(0, 25);
 }
 
-// ۴. تابع اصلی POST که درخواست‌های فرانت‌اند رو دریافت و پردازش می‌کنه
 export async function POST(req: Request) {
   try {
-    // گرفتن پیام کاربر از بدنه درخواست (Destructuring در جاوااسکریپت)
-    const { message } = await req.json();
+    const { message, image } = await req.json();
 
-    if (!message || typeof message !== "string") {
+    if ((!message || typeof message !== "string") && !image) {
       return NextResponse.json(
-        { error: "لطفاً یک پیام معتبر وارد کنید." },
+        { error: "لطفاً یک پیام یا تصویر معتبر ارسال کنید." },
         { status: 400 }
       );
     }
 
-    // خواندن کلید گوگل و آدرس پروکسی از فایل .env.local
-    const apiKey = process.env.GEMINI_API_KEY;
-    const proxyUrl = process.env.PROXY_URL;
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    const proxyUrl = process.env.PROXY_URL?.trim();
 
     if (!apiKey) {
       return NextResponse.json(
@@ -123,85 +160,180 @@ export async function POST(req: Request) {
       );
     }
 
-    // پیدا کردن دروس مرتبط با سوال کاربر
-    const relevantCourses = findRelevantCourses(message);
+    // ۱. خواندن دروس زنده از دیتابیس ابری Supabase (و استفاده از فایل محلی به عنوان پشتیبان خودکار)
+    let activeCourses: Course[] = (coursesData as any).courses as Course[];
+    try {
+      const { data: dbCourses, error: dbErr } = await supabase
+        .from("courses")
+        .select("*");
 
-    // ساختن دستورالعمل سیستم (System Prompt) برای جمینای
-const systemPrompt = `
-تو «دستیار هوشمند آموزشی دانشگاه رازی کرمانشاه» (ویژه دانشکده علوم - نیمسال اول ۱۴۰۵-۱۴۰۶) هستی.
-لحن تو باید بسیار محترمانه، صمیمی، دانشجوپسند، واضح و راهنما باشد.
+      if (!dbErr && dbCourses && dbCourses.length > 0) {
+        activeCourses = dbCourses as Course[];
+        console.log(
+          `📊 تعداد ${activeCourses.length} درس به صورت زنده از دیتابیس Supabase خوانده شد.`
+        );
+      } else {
+        console.log(
+          "📂 دیتابیس ابری خالی است یا در دسترس نیست؛ استفاده خودکار از فایل JSON محلی."
+        );
+      }
+    } catch (e) {
+      console.warn("⚠️ خطا در اتصال به Supabase، استفاده از فایل JSON پشتیبان.");
+    }
 
-وظایف و قوانین رفتاری تو:
-1. اگر دانشجو سوال مبهمی پرسید و نام درس یا استاد را نگفت (مثلاً گفت: «کلاس من کجاست؟»، «امتحانم کیه؟» یا «ساعت کلاسم چنده؟»)، به هیچ وجه از خودت درسی را مثال نزن! در عوض خیلی محترمانه بگو:
-   «عزیزم، برای اینکه بتونم دقیق کمکت کنم، لطفاً **نام درس**، **نام استاد** یا **کد درس** رو بهم بگو تا سریع برات چک کنم که کلاست چه روزی، چه ساعتی و توی کدوم کلاس برگزار میشه و امتحانت کی هست!»
+    // ۲. پیدا کردن دروس مرتبط با سوال کاربر
+    const relevantCourses = message
+      ? findRelevantCourses(message, activeCourses)
+      : [];
 
-2. اگر دانشجو نام درس یا استاد را گفت، فقط و فقط بر اساس «اطلاعات دروس استخراج‌شده» در پایین به او جواب بده و این موارد را به صورت دسته‌بندی‌شده (بولت‌پوینت) مشخص کن:
-   - 📌 **نام درس و گروه** (به همراه کد درس)
-   - 👨‍🏫 **نام استاد** (نام خانوادگی و نام کوچک را به شکل طبیعی بنویس، مثلاً: دکتر لیلا پارسایی مجد)
-   - 🕒 **زمان و روز برگزاری** (اگر هفته زوج یا فرد است یا کلاس حل تمرین دارد حتماً تاکید کن)
-   - 📍 **مکان برگزاری** (شماره کلاس، تالار یا آزمایشگاه)
-   - 📝 **تاریخ و ساعت امتحان پایان‌ترم** (اگر امتحان نداشت بگو: بدون امتحان نهایی / عملی)
+    const coursesContext =
+      relevantCourses.length > 0
+        ? `\nاطلاعات دروس استخراج‌شده از سیستم گلستان مرتبط با پیام کاربر:\n${JSON.stringify(relevantCourses, null, 2)}`
+        : `\n(نکته سیستمی: برای این پیام کاربر، درس خاصی در دیتابیس جستجو نشد یا پیام جنبه عمومی/مبهم دارد.)`;
 
-3. اگر درس یا استادی که دانشجو پرسیده در لیست زیر وجود نداشت، صادقانه بگو: «متأسفانه این درس یا استاد رو توی لیست دروس ارائه‌شده‌ی این ترم دانشکده علوم پیدا نکردم. مطمئنی اسم درس رو درست وارد کردی؟» و هرگز اطلاعات خیالی نساز.
+    const systemPrompt = `
+تو «دستیار هوشمند دانشگاه رازی کرمانشاه» (دانشکده علوم - نیمسال اول ۱۴۰۵-۱۴۰۶) هستی.
+شخصیت تو: یک هم‌دانشگاهی باهوش، صمیمی، خوش‌برخورد و همه‌فن‌حریف که هم می‌تواند درباره مسائل روزمره، برنامه‌نویسی، درس خواندن و سوالات عمومی گپ بزند و هم اطلاعات دقیق انتخاب واحد را ارائه دهد.
 
-اطلاعات دروس استخراج‌شده از سیستم گلستان مرتبط با پیام کاربر:
-${JSON.stringify(relevantCourses, null, 2)}
+نحوه برخورد با پیام‌های مختلف کاربر:
 
-پیام دانشجو:
-${message}
+حالت ۱ - گفتگوی آزاد، احوال‌پرسی و سوالات عمومی یا علمی:
+- اگر کاربر سلام کرد، گپ زد، درد و دل دانشجویی کرد، یا سوال عمومی و علمی پرسید، کاملاً آزادانه، طبیعی، صمیمی و هوشمندانه با او گفتگو کن و به سوالاتش جواب کامل بده.
+
+حالت ۲ - سوالات مبهم درباره کلاس و امتحان خود دانشجو:
+- اگر کاربر سوالی درباره برنامه خودش پرسید ولی نام درس یا استاد را نگفت (مثلاً «کلاس من کجاست؟»، «فردا چی دارم؟»)، به او بگو:
+  «رفیق، برای اینکه بتونم دقیق بهت بگم، لطفاً **نام درس**، **نام استاد** یا **کد درس** رو بهم بگو تا سریع از لیست دروس این ترم برات چک کنم که کلاست چه روزی، چه ساعتی و کجا برگزار میشه!»
+
+حالت ۳ - سوالات مشخص درباره دروس ارائه شده، اساتید، زمان یا مکان کلاس‌ها:
+- وقتی کاربر نام یک درس، رشته، روز یا استاد خاص را پرسید، **فقط و فقط** بر اساس «اطلاعات دروس استخراج‌شده» به او پاسخ بده و موارد زیر را به شکل بولت‌پوینت تمیز بنویس:
+  • 📌 **نام درس و گروه** (به همراه کد درس)
+  • 👨‍🏫 **نام استاد** (نام را به شکل طبیعی بنویس، مثلاً به جای "پارسایی مجد لیلا" بگو "دکتر لیلا پارسایی مجد")
+  • 🕒 **زمان برگزاری** (روز، ساعت، و اشاره به هفته زوج/فرد یا حل تمرین در صورت وجود)
+  • 📍 **مکان برگزاری**
+  • 📝 **تاریخ و ساعت امتحان پایان‌ترم**
+- اگر کاربر نام درس یا استادی را پرسید که در «اطلاعات دروس استخراج‌شده» وجود نداشت، هرگز از خودت ساعت و کلاسی نساز! صادقانه بگو که این درس در لیست دروس ارائه‌شده‌ی این ترم دانشکده علوم پیدا نشد.
+${coursesContext}
+
+پیام کاربر:
+${message || "لطفاً این تصویر را بررسی و تحلیل کن."}
 `;
 
-    // آدرس رسمی API گوگل برای مدل پرسرعت و رایگان gemini-2.5-flash
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const dispatcher = proxyUrl
+      ? new ProxyAgent({
+          uri: proxyUrl,
+          connectTimeout: 30000,
+          allowH2: false,
+        })
+      : undefined;
 
-    // تنظیمات ارسال درخواست به گوگل
-    const fetchOptions: any = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: systemPrompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2, // دمای پایین برای اینکه جواب‌ها کاملاً دقیق و بدون توهم باشه
+    // لیست مدل‌های متنی (سریع و کم‌مصرف - بدون Argon)
+    const textModels = [
+      "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.6-flash",
+      "gemini-2.5-flash",
+      "gemini-3.8-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+      "gemini-2.5-flash-lite",
+      "gemini-flash-latest",
+      "gemma-4-31b-it",
+    ];
+
+    // لیست مدل‌های تصویری و تحلیلی سنگین (برای گزارش ۲۷۲)
+    const visionAndHeavyModels = [
+      "gemini-2.5-flash",
+      "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-2.5-pro",
+      "gemini-3.1-pro-preview",
+    ];
+
+    const activeModelList = image ? visionAndHeavyModels : textModels;
+
+    const parts: any[] = [{ text: systemPrompt }];
+    if (image && image.data && image.mimeType) {
+      parts.push({
+        inlineData: {
+          mimeType: image.mimeType,
+          data: image.data,
         },
-      }),
-    };
-
-    // اگر در فایل .env.local پروکسی ست شده بود، ترافیک رو از تونل پروکسی هیدیفای رد کن
-    if (proxyUrl) {
-      fetchOptions.dispatcher = new ProxyAgent(proxyUrl);
+      });
     }
 
-    // ارسال درخواست به سرورهای گوگل با استفاده از undiciFetch
-    const response = await undiciFetch(geminiUrl, fetchOptions);
-    const data: any = await response.json();
+    let lastErrorData: any = null;
+    let lastStatus = 500;
 
-    if (!response.ok) {
-      console.error("Gemini API Error:", data);
-      return NextResponse.json(
-        { error: data?.error?.message || "خطا در دریافت پاسخ از سمت گوگل" },
-        { status: response.status }
-      );
+    for (const modelName of activeModelList) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+      const fetchOptions: any = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Connection: "close",
+        },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.5,
+          },
+        }),
+        dispatcher,
+      };
+
+      try {
+        console.log(`🔄 در حال امتحان مدل: ${modelName}...`);
+        const response = await undiciFetch(geminiUrl, fetchOptions);
+        const data: any = await response.json();
+
+        if (response.ok) {
+          const reply =
+            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+            "متأسفانه نتوانستم پاسخی تولید کنم.";
+          console.log(`✅ پاسخ با موفقیت از مدل [ ${modelName} ] دریافت شد!`);
+          return NextResponse.json({ reply, modelUsed: modelName });
+        }
+
+        lastErrorData = data;
+        lastStatus = response.status;
+
+        if (
+          response.status === 503 ||
+          response.status === 429 ||
+          response.status === 404
+        ) {
+          console.warn(
+            `⚠️ مدل ${modelName} شلوغ است (کد ${response.status}). سوئیچ خودکار به مدل بعدی...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          continue;
+        }
+
+        break;
+      } catch (networkErr: any) {
+        console.warn(
+          `⚠️ نوسان لحظه‌ای شبکه روی مدل ${modelName}. تلاش روی مدل بعدی...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
     }
 
-    // بیرون کشیدن متن جواب از داخل آبجکت برگشتی گوگل
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "متأسفانه نتوانستم پاسخی تولید کنم.";
-
-    // برگرداندن جواب نهایی به فرانت‌اند
-    return NextResponse.json({ reply });
+    return NextResponse.json(
+      {
+        error:
+          lastErrorData?.error?.message ||
+          "سرورهای گوگل در حال حاضر پاسخگو نیستند، لطفاً چند لحظه دیگر امتحان کنید.",
+      },
+      { status: lastStatus }
+    );
   } catch (error: any) {
     console.error("Server Error:", error);
     return NextResponse.json(
       {
-        error:
-          "خطا در برقراری ارتباط با سرور هوش مصنوعی! مطمئن شو هیدیفای روشن است و پورت پروکسی در .env.local درست وارد شده.",
+        error: "خطای داخلی در سرور رخ داد.",
       },
       { status: 500 }
     );

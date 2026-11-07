@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 import styles from "./page.module.css";
-
+import ThemeToggle from "../components/ThemeToggle";
 interface Message {
   sender: "user" | "bot";
   text: string;
 }
 
 export default function Home() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,27 +65,40 @@ export default function Home() {
   };
 
   return (
-    <main className={styles.container}>
+    <main className={styles.container} data-theme={theme}>
       {/* هدر بالای صفحه */}
-      <header className={styles.header}>
+      {/* <header className={styles.header}>
         <button className={styles.resetBtn} onClick={handleReset}>
           <span>شروع دوباره</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
             <path d="M3 3v5h5" />
           </svg>
-        </button>
+        </button> */}
+      <header className={styles.header}>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <button className={styles.resetBtn} onClick={handleReset}>
+            <span>شروع دوباره</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </button>
+          {/* کامپوننت تغییر تم */}
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        </div>
         <div className={styles.statusWrapper}>
           <span className={styles.statusText}>آنلاین</span>
           <span className={styles.statusDot}></span>
         </div>
         <div className={styles.brandTitle}>
-          <span>دستیار هوشمند دانشگاه</span>
+          <span>دستیار هوشمند دانشگاه رازی</span>
           <div className={styles.brandIcon}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <img src="logo.png" alt="" className={styles.logo} />
+            {/* <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
               <path d="M6 6h10M6 10h10" />
-            </svg>
+            </svg> */}
           </div>
         </div>
       </header>
@@ -122,10 +143,10 @@ export default function Home() {
             <div className={styles.suggestionsTitle}>یا به زبان ساده از من بپرسید، مثلاً:</div>
             <div className={styles.chipsRow}>
               <button className={styles.chip} onClick={() => handleSendMessage("کلاس‌های روز شنبه چه ساعتی هستند؟")}>
-                فردا چه کلاس‌هایی دارم؟
+                   کلاس های روز شنبه چه ساعتی هستند؟
               </button>
-              <button className={styles.chip} onClick={() => handleSendMessage("دفتر اساتید کجاست؟")}>
-                دفتر اساتید کجاست؟
+              <button className={styles.chip} onClick={() => handleSendMessage("برای انتخاب واحد کمکم کن")}>
+                برای انتخاب واحد کمکم کن
               </button>
             </div>
           </div>
@@ -153,8 +174,8 @@ export default function Home() {
       {/* کادر ورودی پایین صفحه */}
       <footer className={styles.footer}>
         <div className={styles.inputContainer}>
-          <button 
-            className={styles.sendBtn} 
+          <button
+            className={styles.sendBtn}
             onClick={() => handleSendMessage()}
             disabled={loading}
           >
