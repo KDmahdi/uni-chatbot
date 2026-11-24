@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
-import { supabase } from "@/lib/supabase";
+import { turso } from "@/lib/turso";
 import coursesData from "@/data/razi_courses_1405-1406_term1.json";
 
 interface Session {
@@ -54,60 +54,18 @@ function findRelevantCourses(userQuery: string, allCourses: Course[]): Course[] 
   const cleanQuery = normalizePersian(userQuery);
 
   const stopWords = [
-    "کلاس",
-    "درس",
-    "استاد",
-    "دکتر",
-    "ساعت",
-    "چند",
-    "کی",
-    "کجاست",
-    "کجا",
-    "روز",
-    "چه",
-    "دارم",
-    "داریم",
-    "ارائه",
-    "میشه",
-    "می‌شود",
-    "است",
-    "هست",
-    "برای",
-    "در",
-    "از",
-    "به",
-    "با",
-    "را",
-    "رو",
-    "من",
-    "ما",
-    "لیست",
-    "برنامه",
-    "شماره",
-    "کد",
-    "امتحان",
-    "ظرفیت",
-    "واحد",
-    "گروه",
-    "سلام",
-    "خوبی",
-    "چطوری",
-    "چخبر",
-    "کمک",
-    "دانشگاه",
-    "رازی",
-    "ترم",
-    "چیه",
-    "چیست",
+    "کلاس", "درس", "استاد", "دکتر", "ساعت", "چند", "کی", "کجاست", "کجا", "روز", "چه",
+    "دارم", "داریم", "ارائه", "میشه", "می‌شود", "است", "هست", "برای", "در", "از",
+    "به", "با", "را", "رو", "من", "ما", "لیست", "برنامه", "شماره", "کد", "امتحان",
+    "ظرفیت", "واحد", "گروه", "سلام", "خوبی", "چطوری", "چخبر", "کمک", "دانشگاه", "رازی",
+    "ترم", "چیه", "چیست",
   ];
 
   const keywords = cleanQuery
     .split(/[\s،؟?.,!]+/)
     .filter((word) => word.length > 1 && !stopWords.includes(word));
 
-  if (keywords.length === 0) {
-    return [];
-  }
+  if (keywords.length === 0) return [];
 
   const scoredCourses = allCourses.map((course) => {
     let score = 0;
@@ -123,101 +81,149 @@ function findRelevantCourses(userQuery: string, allCourses: Course[]): Course[] 
     );
 
     for (const word of keywords) {
-      if (searchableText.includes(word)) {
-        score += 1;
-      }
+      if (searchableText.includes(word)) score += 1;
     }
 
     return { course, score };
   });
 
-  const matched = scoredCourses
+  return scoredCourses
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
-    .map((item) => item.course);
-
-  return matched.slice(0, 25);
+    .map((item) => item.course)
+    .slice(0, 35);
 }
 
 export async function POST(req: Request) {
   try {
-    const { message, image } = await req.json();
+    const { message, image, images } = await req.json();
 
-    if ((!message || typeof message !== "string") && !image) {
+    // پشتیبانی همزمان از تک‌عکس و چندعکس
+    const rawImages: { data: string; mimeType: string }[] = Array.isArray(images)
+      ? images
+      : image
+      ? [image]
+      : [];
+
+    if ((!message || typeof message !== "string") && rawImages.length === 0) {
       return NextResponse.json(
-        { error: "لطفاً یک پیام یا تصویر معتبر ارسال کنید." },
+        { error: "لطفاً پیام یا تصویر معتبری ارسال کنید." },
         { status: 400 }
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    const openRouterApiKey = process.env.OPENROUTER_API_KEY?.trim();
+    const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
     const proxyUrl = process.env.PROXY_URL?.trim();
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "کلید GEMINI_API_KEY در فایل .env.local پیدا نشد!" },
-        { status: 500 }
-      );
-    }
-
-    // ۱. خواندن دروس زنده از دیتابیس ابری Supabase (و استفاده از فایل محلی به عنوان پشتیبان خودکار)
+    // ۱. دریافت دروس از دیتابیس ابری Turso (با فال‌بک محلی)
     let activeCourses: Course[] = (coursesData as any).courses as Course[];
     try {
-      const { data: dbCourses, error: dbErr } = await supabase
-        .from("courses")
-        .select("*");
+      const result = await turso.execute(
+        "SELECT * FROM courses ORDER BY created_at ASC"
+      );
 
-      if (!dbErr && dbCourses && dbCourses.length > 0) {
-        activeCourses = dbCourses as Course[];
-        console.log(
-          `📊 تعداد ${activeCourses.length} درس به صورت زنده از دیتابیس Supabase خوانده شد.`
-        );
-      } else {
-        console.log(
-          "📂 دیتابیس ابری خالی است یا در دسترس نیست؛ استفاده خودکار از فایل JSON محلی."
-        );
+      if (result.rows && result.rows.length > 0) {
+        activeCourses = result.rows.map((row: any) => ({
+          ...row,
+          units: row.units
+            ? typeof row.units === "string"
+              ? JSON.parse(row.units)
+              : row.units
+            : { total: 0, practical: 0 },
+          instructors: row.instructors
+            ? typeof row.instructors === "string"
+              ? JSON.parse(row.instructors)
+              : row.instructors
+            : [],
+          sessions: row.sessions
+            ? typeof row.sessions === "string"
+              ? JSON.parse(row.sessions)
+              : row.sessions
+            : [],
+          exam: row.exam
+            ? typeof row.exam === "string"
+              ? JSON.parse(row.exam)
+              : row.exam
+            : null,
+        })) as Course[];
       }
-    } catch (e) {
-      console.warn("⚠️ خطا در اتصال به Supabase، استفاده از فایل JSON پشتیبان.");
+    } catch {
+      console.warn("⚠️ خطا در اتصال به Turso، استفاده از فایل JSON پشتیبان.");
     }
 
-    // ۲. پیدا کردن دروس مرتبط با سوال کاربر
-    const relevantCourses = message
+    // ۲. تشخیص درخواست انتخاب واحد
+    const isCoursePlanning = Boolean(
+      rawImages.length > 0 ||
+        /انتخاب\s*واحد|پیش\s*انتخاب|گزارش\s*۲۷۲|گزارش\s*272|کارنامه|پیشنهاد\s*درس|واحدهای\s*ترم/i.test(
+          message || ""
+        )
+    );
+
+    const relevantCourses = isCoursePlanning
+      ? activeCourses
+      : message
       ? findRelevantCourses(message, activeCourses)
       : [];
 
     const coursesContext =
       relevantCourses.length > 0
-        ? `\nاطلاعات دروس استخراج‌شده از سیستم گلستان مرتبط با پیام کاربر:\n${JSON.stringify(relevantCourses, null, 2)}`
-        : `\n(نکته سیستمی: برای این پیام کاربر، درس خاصی در دیتابیس جستجو نشد یا پیام جنبه عمومی/مبهم دارد.)`;
+        ? `\nاطلاعات دروس ارائه‌شده نیمسال جاری دانشگاه رازی:\n${JSON.stringify(relevantCourses, null, 2)}`
+        : `\n(نکته سیستمی: برای این پیام، درس خاصی فیلتر نشد.)`;
 
+    // ۳. پرامپت مهندسی‌شده جامع
     const systemPrompt = `
-تو «دستیار هوشمند دانشگاه رازی کرمانشاه» (دانشکده علوم - نیمسال اول ۱۴۰۵-۱۴۰۶) هستی.
-شخصیت تو: یک هم‌دانشگاهی باهوش، صمیمی، خوش‌برخورد و همه‌فن‌حریف که هم می‌تواند درباره مسائل روزمره، برنامه‌نویسی، درس خواندن و سوالات عمومی گپ بزند و هم اطلاعات دقیق انتخاب واحد را ارائه دهد.
+تو «دستیار هوشمند دانشگاه رازی کرمانشاه» (دانشکده علوم) هستی.
+شخصیت: مثل یک هم‌دانشگاهی دلسوز، باهوش، صمیمی، خوش‌برخورد و همه‌فن‌حریف که صادقانه راهنمایی می‌کند و ادبیاتش کاملاً دانشجویی، صمیمی و دوستانه است.
 
-نحوه برخورد با پیام‌های مختلف کاربر:
+وظیفه تو این است که بر اساس نیت کاربر، یکی از حالت‌های زیر را هوشمندانه انتخاب و پاسخ دهی:
 
-حالت ۱ - گفتگوی آزاد، احوال‌پرسی و سوالات عمومی یا علمی:
-- اگر کاربر سلام کرد، گپ زد، درد و دل دانشجویی کرد، یا سوال عمومی و علمی پرسید، کاملاً آزادانه، طبیعی، صمیمی و هوشمندانه با او گفتگو کن و به سوالاتش جواب کامل بده.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 حالت اول: درخواست انتخاب واحد یا تحلیل کارنامه
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+۱. اگر دانشجو گفت می‌خواهد انتخاب واحد کند اما هنوز کارنامه یا تصویری نفرستاده و رشته‌اش را نگفته است:
+   به او صمیمانه بگو:
+   «رفیق، برای اینکه بتونم دقیق‌ترین واحدها رو برات بچینم، دوتا چیز لازمه:
+   ۱. اسکرین‌شات یا عکس **گزارش ۲۷۲ گلستان** (خلاصه وضعیت تحصیلی / کارنامه کامل) رو با دکمه 📎 برام بفرست (اگه طولانیه می‌تونی چندتا عکس بفرستی).
+   ۲. **رشته تحصیلی و گروه آموزشی‌ت** رو هم برام بنویس (مثلاً ریاضی، آمار، فیزیک، علوم کامپیوتر یا زیست) تا فقط درس‌های مرتبط با رشته خودت رو بهت پیشنهاد بدم!»
 
-حالت ۲ - سوالات مبهم درباره کلاس و امتحان خود دانشجو:
-- اگر کاربر سوالی درباره برنامه خودش پرسید ولی نام درس یا استاد را نگفت (مثلاً «کلاس من کجاست؟»، «فردا چی دارم؟»)، به او بگو:
-  «رفیق، برای اینکه بتونم دقیق بهت بگم، لطفاً **نام درس**، **نام استاد** یا **کد درس** رو بهم بگو تا سریع از لیست دروس این ترم برات چک کنم که کلاست چه روزی، چه ساعتی و کجا برگزار میشه!»
+۲. اگر تصویر (گزارش ۲۷۲) ارسال شد:
+   - در گزارش ۲۷۲ سرفصل‌ها و جدول دروسی که گذرانده مشخص است:
+     * دروسی که **نمره قبولی (۱۰ و بالاتر)** دارند: قبلاً پاس شده‌اند و **به هیچ وجه نباید دوباره پیشنهاد شوند**.
+     * دروسی که **نمره ثبت‌نشده دارند یا وضعیت ناتمام/افتاده** دارند: دانشجو باید آن‌ها را بگذراند.
+     * حداقل واحدهای گذرانده‌شده و ترم تحصیلی را از عکس بخوان.
+   - **تشخیص رشته و گروه آموزشی:** رشته دانشجو را از بالای گزارش ۲۷۲ بخوان. اگر در عکس مشخص نبود یا مبهم بود، بگو: «رفیق رشته‌ت چیه؟ بر اساس گروه آموزشی خودت (مثلاً گروه ریاضی یا فیزیک) بهترین دروس رو فیلتر کنم».
+   - **قوانین حیاتی عدم تداخل در چینش برنامه ترم:**
+     • **تداخل ساعت کلاسی:** جلسات هفتگی دو درس نباید در یک روز و یک بازه زمانی مشترک باشند (هفته‌های زوج و فرد را هم در نظر بگیر).
+     • **تداخل امتحان پایان‌ترم:** دو درس نباید دقیقاً در یک روز و ساعت امتحان یکسان داشته باشند.
+   - برنامه پیشنهادی ترم را بین **۱۶ تا ۲۰ واحد** تنظیم کن و با ساختاری منظم شامل نام درس و کد، نام استاد، زمان کلاس، تاریخ امتحان و تعداد واحد ارائه بده و تایید کن که ساعت‌ها هیچ تداخلی با هم ندارند.
 
-حالت ۳ - سوالات مشخص درباره دروس ارائه شده، اساتید، زمان یا مکان کلاس‌ها:
-- وقتی کاربر نام یک درس، رشته، روز یا استاد خاص را پرسید، **فقط و فقط** بر اساس «اطلاعات دروس استخراج‌شده» به او پاسخ بده و موارد زیر را به شکل بولت‌پوینت تمیز بنویس:
-  • 📌 **نام درس و گروه** (به همراه کد درس)
-  • 👨‍🏫 **نام استاد** (نام را به شکل طبیعی بنویس، مثلاً به جای "پارسایی مجد لیلا" بگو "دکتر لیلا پارسایی مجد")
-  • 🕒 **زمان برگزاری** (روز، ساعت، و اشاره به هفته زوج/فرد یا حل تمرین در صورت وجود)
-  • 📍 **مکان برگزاری**
-  • 📝 **تاریخ و ساعت امتحان پایان‌ترم**
-- اگر کاربر نام درس یا استادی را پرسید که در «اطلاعات دروس استخراج‌شده» وجود نداشت، هرگز از خودت ساعت و کلاسی نساز! صادقانه بگو که این درس در لیست دروس ارائه‌شده‌ی این ترم دانشکده علوم پیدا نشد.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 حالت دوم: سوال درباره برنامه کلاس‌ها و اساتید در یک روز خاص
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+وقتی دانشجو درباره کلاس‌های یک روز (مثلاً "دوشنبه چه کلاس‌هایی داریم؟" یا "کلاس‌های دکتر پارسایی") سؤال می‌پرسد، به صورت خط‌به‌خط، تفکیک‌شده و همراه با ایموجی‌های منظم پاسخ بده:
+
+نمونه ساختار پاسخ برای هر درس:
+📌 **نام درس** (کد درس - گروه)
+👨‍🏫 **استاد:** نام استاد (به فرمت طبیعی، مثلاً دکتر لیلا پارسایی مجد)
+🏢 **گروه آموزشی:** نام دپارتمان
+🕒 **زمان کلاس:** روز و ساعت (با ذکر هفته زوج/فرد در صورت وجود)
+📍 **مکان:** شماره کلاس / آزمایشگاه
+📝 **امتحان:** تاریخ و ساعت امتحان
+---
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💬 حالت سوم: گفتگوی آزاد، احوال‌پرسی یا سوالات عمومی
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+اگر سلام کرد، احوال‌پرسی کرد یا درباره برنامه‌نویسی و زندگی دانشجویی صحبت کرد، کاملاً دوستانه، خودمانی و صمیمی گپ بزن.
+
 ${coursesContext}
 
 پیام کاربر:
-${message || "لطفاً این تصویر را بررسی و تحلیل کن."}
+${message || "لطفاً این تصویر (گزارش ۲۷۲) را تحلیل کن و برنامه انتخاب واحد بدون تداخل پیشنهاد بده."}
 `;
 
+    // عبور از پروکسی محلی در محیط توسعه
     const dispatcher = proxyUrl
       ? new ProxyAgent({
           uri: proxyUrl,
@@ -226,115 +232,186 @@ ${message || "لطفاً این تصویر را بررسی و تحلیل کن."}
         })
       : undefined;
 
-    // لیست مدل‌های متنی (سریع و کم‌مصرف - بدون Argon)
-    const textModels = [
-      "gemini-3.5-flash",
-      "gemini-3.7-flash",
-      "gemini-3.6-flash",
-      "gemini-2.5-flash",
-      "gemini-3.8-flash",
-      "gemini-3.5-flash-lite",
-      "gemini-3.1-flash-lite",
-      "gemini-2.5-flash-lite",
-      "gemini-flash-latest",
-      "gemma-4-31b-it",
-    ];
+    // ========================================================
+    // اولویت اول: OpenRouter (شامل Qwen و مدل‌های رایگان)
+    // ========================================================
+    if (openRouterApiKey) {
+      const openRouterVisionModels = [
+        "google/gemma-4-31b-it:free",
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "openrouter/free",
+      ];
 
-    // لیست مدل‌های تصویری و تحلیلی سنگین (برای گزارش ۲۷۲)
-    const visionAndHeavyModels = [
-      "gemini-2.5-flash",
-      "gemini-3.5-flash",
-      "gemini-3.7-flash",
-      "gemini-3.8-flash",
-      "gemini-2.5-pro",
-      "gemini-3.1-pro-preview",
-    ];
+      const openRouterTextModels = [
+        "openrouter/free",
+        "google/gemma-4-31b-it:free",
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "qwen/qwen-2.5-72b-instruct",
+        "deepseek/deepseek-chat",
+      ];
 
-    const activeModelList = image ? visionAndHeavyModels : textModels;
+      const openRouterActiveList =
+        rawImages.length > 0 ? openRouterVisionModels : openRouterTextModels;
 
-    const parts: any[] = [{ text: systemPrompt }];
-    if (image && image.data && image.mimeType) {
-      parts.push({
-        inlineData: {
-          mimeType: image.mimeType,
-          data: image.data,
-        },
+      // آماده‌سازی محتوای چندتصویری برای OpenRouter
+      const userContent: any[] = [{ type: "text", text: systemPrompt }];
+      rawImages.forEach((img) => {
+        userContent.push({
+          type: "image_url",
+          image_url: {
+            url: `data:${img.mimeType};base64,${img.data}`,
+          },
+        });
       });
+
+      for (const model of openRouterActiveList) {
+        try {
+          console.log(`🌐 تلاش روی OpenRouter [${model}]...`);
+          const res = await undiciFetch(
+            "https://openrouter.ai/api/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${openRouterApiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "Uni Chatbot Razi",
+              },
+              body: JSON.stringify({
+                model,
+                messages: [{ role: "user", content: userContent }],
+                temperature: 0.4,
+              }),
+              dispatcher,
+            }
+          );
+
+          if (res.ok) {
+            const data: any = await res.json();
+            const reply = data.choices?.[0]?.message?.content;
+            if (reply) {
+              console.log(`✅ پاسخ موفق از OpenRouter [${model}]`);
+              return NextResponse.json({
+                reply,
+                provider: "OpenRouter",
+                modelUsed: model,
+              });
+            }
+          }
+          console.warn(`⚠️ خطا در OpenRouter [${model}] کد: ${res.status}`);
+        } catch (err: any) {
+          console.warn(`⚠️ خطای شبکه OpenRouter:`, err.message);
+        }
+      }
     }
 
-    let lastErrorData: any = null;
-    let lastStatus = 500;
+    // ========================================================
+    // اولویت دوم (پشتیبان / فال‌بک): Google Gemini (به‌روزرسانی‌شده)
+    // ========================================================
+    if (geminiApiKey) {
+      console.log("🔄 سوئیچ به Google Gemini...");
 
-    for (const modelName of activeModelList) {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      // مدل‌های چندوجهی قدرتمند برای پردازش چندتصویری گزارش ۲۷۲ و چیدمان انتخاب واحد
+      const geminiVisionModels = [
+        "gemini-2.5-flash",
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+        "gemini-omni-1.2-flash",
+        "gemini-3.8-flash",
+        "gemini-2.5-pro",
+        "gemini-3.1-pro-preview",
+        "gemini-pro-latest",
+        "gemini-4-neon",
+      ];
 
-      const fetchOptions: any = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Connection: "close",
-        },
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.5,
+      // مدل‌های سریع و کم‌مصرف برای چت متنی (بدون مصرف سنگین سری Gemini 4)
+      const geminiTextModels = [
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+        "gemini-omni-1.2-flash",
+        "gemini-3.6-flash",
+        "gemini-2.5-flash",
+        "gemini-3.8-flash",
+        "gemini-omni-1.1-flash",
+        "gemini-3-flash-preview",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-2.5-flash-lite",
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
+        "gemma-4-26b-a4b-it",
+        "gemma-4-31b-it",
+      ];
+
+      const geminiActiveList =
+        rawImages.length > 0 ? geminiVisionModels : geminiTextModels;
+
+      // آماده‌سازی چندتصویر برای Gemini
+      const geminiParts: any[] = [{ text: systemPrompt }];
+      rawImages.forEach((img) => {
+        geminiParts.push({
+          inlineData: {
+            mimeType: img.mimeType,
+            data: img.data,
           },
-        }),
-        dispatcher,
-      };
+        });
+      });
 
-      try {
-        console.log(`🔄 در حال امتحان مدل: ${modelName}...`);
-        const response = await undiciFetch(geminiUrl, fetchOptions);
-        const data: any = await response.json();
+      for (const modelName of geminiActiveList) {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
 
-        if (response.ok) {
-          const reply =
-            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-            "متأسفانه نتوانستم پاسخی تولید کنم.";
-          console.log(`✅ پاسخ با موفقیت از مدل [ ${modelName} ] دریافت شد!`);
-          return NextResponse.json({ reply, modelUsed: modelName });
-        }
+        try {
+          console.log(`⚡ تلاش روی Gemini [${modelName}]...`);
+          const response = await undiciFetch(geminiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Connection: "close",
+            },
+            body: JSON.stringify({
+              contents: [{ parts: geminiParts }],
+              generationConfig: {
+                temperature: 0.4,
+              },
+            }),
+            dispatcher,
+          });
 
-        lastErrorData = data;
-        lastStatus = response.status;
-
-        if (
-          response.status === 503 ||
-          response.status === 429 ||
-          response.status === 404
-        ) {
+          if (response.ok) {
+            const data: any = await response.json();
+            const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (reply) {
+              console.log(`✅ پاسخ موفق از Gemini [${modelName}]`);
+              return NextResponse.json({
+                reply,
+                provider: "Gemini",
+                modelUsed: modelName,
+              });
+            }
+          }
           console.warn(
-            `⚠️ مدل ${modelName} شلوغ است (کد ${response.status}). سوئیچ خودکار به مدل بعدی...`
+            `⚠️ Gemini مدل [${modelName}] در دسترس نبود (کد ${response.status}). سوئیچ به مدل بعدی...`
           );
-          await new Promise((resolve) => setTimeout(resolve, 800));
-          continue;
+        } catch (networkErr: any) {
+          console.warn(
+            `⚠️ خطای شبکه Gemini روی [${modelName}]: ${networkErr?.cause?.code || networkErr?.message}`
+          );
         }
-
-        break;
-      } catch (networkErr: any) {
-        console.warn(
-          `⚠️ نوسان لحظه‌ای شبکه روی مدل ${modelName}. تلاش روی مدل بعدی...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        continue;
       }
     }
 
     return NextResponse.json(
       {
         error:
-          lastErrorData?.error?.message ||
-          "سرورهای گوگل در حال حاضر پاسخگو نیستند، لطفاً چند لحظه دیگر امتحان کنید.",
+          "ارائه‌دهنده‌های هوش مصنوعی در حال حاضر پاسخگو نیستند، لطفاً وضعیت پروکسی را بررسی کنید.",
       },
-      { status: lastStatus }
+      { status: 503 }
     );
   } catch (error: any) {
-    console.error("Server Error:", error);
+    console.error("Chat Server Error:", error);
     return NextResponse.json(
-      {
-        error: "خطای داخلی در سرور رخ داد.",
-      },
+      { error: "خطای داخلی سرور در پردازش درخواست." },
       { status: 500 }
     );
   }

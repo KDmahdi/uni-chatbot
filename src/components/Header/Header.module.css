@@ -1,0 +1,570 @@
+/* ==========================================================================
+   src/components/Header.module.css
+   Responsive RTL Header with Light (Default Site Theme) & Dark Mode Support
+   ========================================================================== */
+
+.header {
+  /* Light Theme Variables - هماهنگ با پس‌زمینه روشن سایت */
+  --hdr-bg: rgba(255, 255, 255, 0.92);
+  --hdr-border: #e2e8f0;
+  --hdr-title: #0f172a;
+  --hdr-subtitle: #64748b;
+
+  --pill-bg: #f8fafc;
+  --pill-border: #e2e8f0;
+  --nav-text: #475569;
+  --nav-hover-bg: #f1f5f9;
+  --nav-hover-text: #0f172a;
+
+  --btn-bg: #ffffff;
+  --btn-border: #e2e8f0;
+  --btn-text: #334155;
+  --btn-hover-bg: #f1f5f9;
+
+  --logo-bg: rgba(37, 99, 235, 0.08);
+  --logo-border: rgba(37, 99, 235, 0.35);
+  --logo-color: #2563eb;
+
+  --accent-blue: #2563eb;
+  --accent-blue-hover: #1d4ed8;
+  --accent-green: #10b981;
+
+  --dropdown-bg: #ffffff;
+  --dropdown-shadow: 0 12px 30px -6px rgba(15, 23, 42, 0.12);
+
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  background-color: var(--hdr-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hdr-border);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Dark Theme Variables - هماهنگ با طرح تاریک ارسالی */
+:global([data-theme="dark"]) .header,
+:global(.dark) .header {
+  --hdr-bg: rgba(10, 15, 28, 0.94);
+  --hdr-border: #1e293b;
+  --hdr-title: #f8fafc;
+  --hdr-subtitle: #94a3b8;
+
+  --pill-bg: #0f172a;
+  --pill-border: #1e293b;
+  --nav-text: #94a3b8;
+  --nav-hover-bg: rgba(255, 255, 255, 0.06);
+  --nav-hover-text: #f8fafc;
+
+  --btn-bg: #111827;
+  --btn-border: #1e293b;
+  --btn-text: #e2e8f0;
+  --btn-hover-bg: #1e293b;
+
+  --logo-bg: rgba(37, 99, 235, 0.14);
+  --logo-border: rgba(59, 130, 246, 0.55);
+  --logo-color: #60a5fa;
+
+  --dropdown-bg: #0f172a;
+  --dropdown-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.65);
+}
+
+.headerInner {
+  max-width: 1440px;
+  margin: 0 auto;
+  height: 74px;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* ==========================================================================
+   Right Section: Brand & Logo
+   ========================================================================== */
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoBox {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background-color: var(--logo-bg);
+  border: 1.5px solid var(--logo-border);
+  color: var(--logo-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(37, 99, 235, 0.16);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.brandLink:hover .logoBox {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.28);
+}
+
+.onlineBadgeDot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  border: 2px solid var(--hdr-bg);
+}
+
+.brandTextGroup {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.desktopTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.brandTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--hdr-title);
+  letter-spacing: -0.2px;
+  line-height: 1.35;
+}
+
+.desktopSubtitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 2px;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.brandSubtitle {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--hdr-subtitle);
+}
+
+/* Mobile-only brand texts (hidden on desktop) */
+.mobileTitleRow,
+.mobileSubtitle {
+  display: none;
+}
+
+/* ==========================================================================
+   Center Section: Desktop Navigation Pill
+   ========================================================================== */
+
+.desktopNavPill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: var(--pill-bg);
+  border: 1px solid var(--pill-border);
+  padding: 0.35rem;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.navItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.05rem;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--nav-text);
+  background: transparent;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.navItem:hover {
+  color: var(--nav-hover-text);
+  background-color: var(--nav-hover-bg);
+}
+
+.navItemActive {
+  background-color: var(--accent-blue) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+}
+
+.chevronIcon {
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.dropdownWrapper {
+  position: relative;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 280px;
+  background-color: var(--dropdown-bg);
+  border: 1px solid var(--hdr-border);
+  border-radius: 16px;
+  padding: 0.5rem;
+  box-shadow: var(--dropdown-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 120;
+  animation: fadeDown 0.18s ease-out;
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 11px;
+  text-decoration: none;
+  color: var(--hdr-title);
+  transition: background-color 0.15s ease;
+}
+
+.dropdownLink:hover {
+  background-color: var(--nav-hover-bg);
+}
+
+.dropdownLinkText {
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdownLinkText strong {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--hdr-title);
+}
+
+.dropdownLinkText span {
+  font-size: 0.74rem;
+  color: var(--hdr-subtitle);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   Left Section: Reset & Theme Toggle Buttons
+   ========================================================================== */
+
+.actionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  height: 40px;
+  padding: 0 0.95rem;
+  border-radius: 12px;
+  background-color: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--btn-text);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resetButton:hover {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--accent-blue);
+}
+
+.resetIcon {
+  color: var(--logo-color);
+}
+
+.squareIconButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--btn-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.squareIconButton:hover {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--accent-blue);
+}
+
+.sunIcon {
+  color: #fbbf24;
+}
+
+.mobileHamburgerBtn {
+  display: none;
+}
+
+/* ==========================================================================
+   Mobile Drawer & FAQ Modal
+   ========================================================================== */
+
+.mobileDrawer {
+  background-color: var(--dropdown-bg);
+  border-bottom: 1px solid var(--hdr-border);
+  padding: 0.85rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: var(--dropdown-shadow);
+}
+
+.mobileNavItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--hdr-title);
+  background: transparent;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: right;
+}
+
+.mobileNavItem:hover {
+  background-color: var(--nav-hover-bg);
+}
+
+.mobileNavItemActive {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+}
+
+.mobileChevron {
+  font-size: 0.7rem;
+  color: var(--hdr-subtitle);
+}
+
+.mobileSubmenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem 0.5rem 0;
+}
+
+.mobileSublink {
+  display: flex;
+  flex-direction: column;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  background-color: var(--pill-bg);
+  text-decoration: none;
+}
+
+.mobileSublink strong {
+  font-size: 0.83rem;
+  color: var(--hdr-title);
+}
+
+.mobileSublink span {
+  font-size: 0.73rem;
+  color: var(--hdr-subtitle);
+}
+
+/* FAQ Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background-color: rgba(9, 13, 22, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 520px;
+  background-color: var(--dropdown-bg, #ffffff);
+  color: var(--hdr-title, #0f172a);
+  border: 1px solid var(--hdr-border, #e2e8f0);
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme="dark"]) .modalCard {
+  background-color: #0f172a;
+  color: #f8fafc;
+  border-color: #1e293b;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.9rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--hdr-border, #e2e8f0);
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.45rem;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.faqItem strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #2563eb;
+  margin-bottom: 0.25rem;
+}
+
+:global([data-theme="dark"]) .faqItem strong {
+  color: #60a5fa;
+}
+
+.faqItem p {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.65;
+  opacity: 0.88;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints (Mobile Layout matching UX Design)
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .desktopNavPill {
+    display: none;
+  }
+
+  .mobileHamburgerBtn {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .headerInner {
+    height: 68px;
+    padding: 0 1rem;
+  }
+
+  /* مخفی کردن متن‌های طولانی دسکتاپ و نمایش نسخه فشرده موبایل */
+  .desktopTitleRow,
+  .desktopSubtitleRow {
+    display: none;
+  }
+
+  .mobileTitleRow {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .mobileSubtitle {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--hdr-subtitle);
+    margin-top: 1px;
+  }
+
+  .brandTitle {
+    font-size: 0.98rem;
+  }
+
+  /* تبدیل دکمه «شروع دوباره» به دکمه مربعی آیکون در موبایل */
+  .resetButtonLabel {
+    display: none;
+  }
+
+  .resetButton {
+    width: 40px;
+    padding: 0;
+  }
+
+  .actionsGroup {
+    gap: 0.45rem;
+  }
+}
