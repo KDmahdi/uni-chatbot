@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef, ChangeEvent ,useEffect } from "react";
+import { useState, useRef, ChangeEvent, useEffect } from "react";
 import styles from "./page.module.css";
-import ThemeToggle from "../components/ThemeToggle";
 
 interface Message {
   sender: "user" | "bot";
@@ -18,12 +17,110 @@ interface SelectedImage {
   mimeType: string;
 }
 
+type GuideKey = "schedule" | "registration" | "professors" | "locations";
+
+interface GuideCardItem {
+  key: GuideKey;
+  icon: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  bullets: string[];
+  samples: string[];
+}
+
+const GUIDE_CARDS: GuideCardItem[] = [
+  {
+    key: "schedule",
+    icon: "📅",
+    title: "برنامه هفتگی کلاس‌ها",
+    subtitle: "مشاهده منظم روز، ساعت و امتحان درس‌ها",
+    description:
+      "برای اطلاع از زمان برگزاری کلاس‌ها و تاریخ امتحانات این نیمسال، کافی است نام درس، روز هفته یا نام گروه آموزشی خود را بپرسید.",
+    bullets: [
+      "می‌توانید لیست کلاس‌های یک روز مشخص (مثلاً شنبه یا دوشنبه) را بخواهید.",
+      "در پاسخ‌ها ساعت دقیق، هفته زوج/فرد، نام استاد و تاریخ امتحان پایان‌ترم مشخص می‌شود.",
+    ],
+    samples: [
+      "برنامه کلاس‌های روز دوشنبه گروه ریاضی چیاست؟",
+      "ساعت کلاس و تاریخ امتحان ساختمان داده‌ها کی هست؟",
+    ],
+  },
+  {
+    key: "registration",
+    icon: "📚",
+    title: "کمک به انتخاب واحد",
+    subtitle: "تحلیل گزارش ۲۷۲ و چینش واحدها بدون تداخل",
+    description:
+      "برای دریافت دقیق‌ترین برنامه پیش‌انتخاب واحد (بدون تداخل ساعت کلاس و امتحان پایان‌ترم)، هنگام ارسال پیام حتماً ۳ مورد زیر را بفرستید:",
+    bullets: [
+      "نام و نام خانوادگی خودتان را بنویسید.",
+      "رشته تحصیلی‌تان را دقیق مشخص کنید (مثلاً علوم کامپیوتر، ریاضی، آمار، فیزیک یا زیست).",
+      "عکس یا اسکرین‌شات گزارش ۲۷۲ گلستان را با دکمه سنجاق (📎) پیوست کنید (امکان انتخاب چند عکس هم‌زمان وجود دارد).",
+    ],
+    samples: [
+      "سلام، [نام و نام خانوادگی] هستم رشته علوم کامپیوتر؛ عکس گزارش ۲۷۲ رو فرستادم، لطفاً برام پیش‌انتخاب واحد بدون تداخل بچین.",
+      "سلام، دانشجوی رشته فیزیک هستم و می‌خوام برای انتخاب واحد این ترم راهنماییم کنی.",
+    ],
+  },
+  {
+    key: "professors",
+    icon: "👨‍🏫",
+    title: "اساتید دانشکده",
+    subtitle: "جستجوی نام اساتید، دروس و ساعات ارائه",
+    description:
+      "برای اینکه بدانید یک استاد در این ترم چه درس‌هایی ارائه داده و در چه روزها و ساعت‌هایی کلاس دارد، کافی است نام یا نام خانوادگی استاد را بپرسید.",
+    bullets: [
+      "نیازی به نوشتن کد درس نیست؛ فقط نام خانوادگی استاد کافی است.",
+      "تمامی گروه‌های ارائه‌شده، ساعات کلاس و مکان برگزاری همان استاد نمایش داده می‌شود.",
+    ],
+    samples: [
+      "استاد پارسایی این ترم چه درس‌هایی داره و ساعت ارائه‌شون کی هست؟",
+      "دکتر زرین قلم این ترم چه کلاس‌هایی ارائه داده؟",
+    ],
+  },
+  {
+    key: "locations",
+    icon: "🏫",
+    title: "مکان و شماره کلاس‌ها",
+    subtitle: "پیدا کردن شماره اتاق، سایت و آزمایشگاه‌ها",
+    description:
+      "برای پیدا کردن شماره اتاق، سالن، سایت کامپیوتر یا آزمایشگاه هر درس، نام درس (و در صورت داشتن چند گروه، شماره گروه یا نام استاد) را بپرسید.",
+    bullets: [
+      "شماره کلاس، آزمایشگاه یا سایت دانشجویان تحصیلات تکمیلی دقیقاً مطابق گلستان اعلام می‌شود.",
+      "اگر درسی جلسه حل تمرین جداگانه داشته باشد، مکان هر دو جلسه نمایش داده می‌شود.",
+    ],
+    samples: [
+      "کلاس درس اصول سیستم‌های عامل در کدام اتاق برگزار میشه؟",
+      "مکان برگزاری آزمایشگاه فیزیولوژی گیاهی گروه ۰۱ کجاست؟",
+    ],
+  },
+];
+
 export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-useEffect(() => {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // وضعیت پنجره راهنما و وضعیت بارگذاری لوگوی دانشگاه رازی
+  const [activeGuide, setActiveGuide] = useState<GuideCardItem | null>(null);
+  const [logoError, setLogoError] = useState(false);
+
+  // استیت نگهداری چندین تصویر همزمان
+  const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // همگام‌سازی تم و دکمه «شروع دوباره» با کامپوننت Header
+  useEffect(() => {
     const savedTheme =
       (localStorage.getItem("theme") as "light" | "dark" | null) ||
-      (document.documentElement.getAttribute("data-theme") as "light" | "dark" | null);
+      (document.documentElement.getAttribute("data-theme") as
+        | "light"
+        | "dark"
+        | null);
 
     if (savedTheme === "dark" || savedTheme === "light") {
       setTheme(savedTheme);
@@ -36,22 +133,37 @@ useEffect(() => {
       }
     };
 
+    const handleGlobalReset = (event: Event) => {
+      event.preventDefault();
+      setMessages([]);
+      setInput("");
+      setSelectedImages([]);
+      setActiveGuide(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveGuide(null);
+      }
+    };
+
     window.addEventListener("theme-change", handleThemeChange);
+    window.addEventListener("reset-chat", handleGlobalReset);
+    document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("theme-change", handleThemeChange);
+      window.removeEventListener("reset-chat", handleGlobalReset);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
 
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // استیت نگهداری چندین تصویر همزمان
-  const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // اسکرول خودکار به آخرین پیام در زمان چت
+  useEffect(() => {
+    if (messages.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, loading]);
 
   // انتخاب یک یا چند تصویر
   const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +171,9 @@ useEffect(() => {
     if (!files || files.length === 0) return;
 
     const fileList = Array.from(files);
-    const validImageFiles = fileList.filter((f) => f.type.startsWith("image/"));
+    const validImageFiles = fileList.filter((f) =>
+      f.type.startsWith("image/")
+    );
 
     if (validImageFiles.length === 0) {
       alert("لطفاً فقط فایل تصویری (PNG, JPG, ...) انتخاب کنید.");
@@ -91,6 +205,15 @@ useEffect(() => {
   // حذف یک تصویر مشخص از لیست با دکمه ضربدر
   const handleRemoveImage = (idToRemove: string) => {
     setSelectedImages((prev) => prev.filter((img) => img.id !== idToRemove));
+  };
+
+  // قرار دادن نمونه سوال داخل کادر پیام پس از کلیک در مودال راهنما
+  const handleUseSamplePrompt = (sampleText: string) => {
+    setInput(sampleText);
+    setActiveGuide(null);
+    setTimeout(() => {
+      textInputRef.current?.focus();
+    }, 60);
   };
 
   // تابع ارسال پیام به همراه آرایه تصاویر
@@ -135,15 +258,18 @@ useEffect(() => {
       } else {
         setMessages((prev) => [
           ...prev,
-          { sender: "bot", text: data.error || "خطایی در پردازش اطلاعات رخ داد." },
+          {
+            sender: "bot",
+            text: data.error || "خطایی در پردازش اطلاعات رخ داد.",
+          },
         ]);
       }
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
           sender: "bot",
-          text: "خطای شبکه! لطفاً اتصال اینترنت و پروکسی را بررسی کنید.",
+          text: "خطای شبکه! لطفاً اتصال اینترنت را بررسی کنید.",
         },
       ]);
     } finally {
@@ -151,73 +277,74 @@ useEffect(() => {
     }
   };
 
-  const handleReset = () => {
-    setMessages([]);
-    setInput("");
-    setSelectedImages([]);
+  // رندر لوگوی دانشگاه رازی (مسیر: public/razi-logo.png)
+const renderRaziLogo = (size: "large" | "small") => {
+    const iconSize = size === "large" ? 36 : 20;
+    return (
+      <svg
+        width={iconSize}
+        height={iconSize}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-label="آیکون دستیار چت‌بات"
+      >
+        <path d="M12 8V4H8" />
+        <rect width="16" height="12" x="4" y="8" rx="3" />
+        <path d="M2 14h2" />
+        <path d="M20 14h2" />
+        <path d="M15 13v2" />
+        <path d="M9 13v2" />
+      </svg>
+    );
   };
 
   return (
-    <main className={styles.container} data-theme={theme}>
-      <div className={styles.mainContent}>
+    <div className={styles.container} data-theme={theme} dir="rtl">
+      <div
+        className={`${styles.mainContent} ${
+          messages.length > 0 ? styles.mainContentChatActive : ""
+        }`}
+      >
         {messages.length === 0 ? (
           <div className={styles.welcomeSection}>
-            <div className={styles.botAvatar}>🎓</div>
+            {/* جایگاه لوگوی دانشگاه رازی */}
+            <div className={styles.botAvatar}>{renderRaziLogo("large")}</div>
+            
             <h1 className={styles.welcomeTitle}>
               سلام! من دستیار هوشمند دانشگاه شما هستم.
             </h1>
             <p className={styles.welcomeSubtitle}>
-              برای انتخاب واحد، پرسیدن برنامه کلاس‌ها، یا گپ زدن درباره درس‌ها می‌توانید سؤال بپرسید.
+              برای انتخاب واحد، پرسیدن برنامه کلاس‌ها، یا گپ زدن درباره درس‌ها
+              می‌توانید سؤال بپرسید.
             </p>
 
             <div className={styles.tipLabel}>
-              📌 موضوعات پرتکرار برای شروع:
+              📌 برای راهنمایی موارد زیر روی هر کدام کلیک کنید
             </div>
 
             <div className={styles.cardsGrid}>
-              <div
-                className={styles.card}
-                onClick={() => handleSendMessage("برنامه کلاس‌های روز دوشنبه چیاست؟")}
-              >
-                <div className={styles.cardIcon}>📅</div>
-                <h3>برنامه هفتگی کلاس‌ها</h3>
-                <p>مشاهده منظم روز، ساعت و مکان درس‌ها</p>
-              </div>
-              <div
-                className={styles.card}
-                onClick={() =>
-                  handleSendMessage("می‌خوام انتخاب واحد کنم، کمکم می‌کنی؟")
-                }
-              >
-                <div className={styles.cardIcon}>📚</div>
-                <h3>تحلیل گزارش ۲۷۲ و انتخاب واحد</h3>
-                <p>بررسی کارنامه و چینش واحدها بدون تداخل</p>
-              </div>
-              <div
-                className={styles.card}
-                onClick={() =>
-                  handleSendMessage("اطلاعات اساتید و زمان حضور آن‌ها")
-                }
-              >
-                <div className={styles.cardIcon}>👨‍🏫</div>
-                <h3>اساتید دانشکده</h3>
-                <p>جستجوی نام اساتید و ساعات ارائه</p>
-              </div>
-              <div
-                className={styles.card}
-                onClick={() =>
-                  handleSendMessage("مکان کلاس‌ها و شماره اتاق‌ها کجاست؟")
-                }
-              >
-                <div className={styles.cardIcon}>🏫</div>
-                <h3>مکان و شماره کلاس‌ها</h3>
-                <p>پیدا کردن شماره اتاق و آزمایشگاه‌ها</p>
-              </div>
+              {GUIDE_CARDS.map((card) => (
+                <button
+                  key={card.key}
+                  type="button"
+                  className={styles.card}
+                  onClick={() => setActiveGuide(card)}
+                >
+                  <div className={styles.cardIcon}>{card.icon}</div>
+                  <h3>{card.title}</h3>
+                  <p>{card.subtitle}</p>
+                </button>
+              ))}
             </div>
 
             <div className={styles.suggestionsTitle}>نمونه سوالات سریع:</div>
             <div className={styles.chipsRow}>
               <button
+                type="button"
                 className={styles.chip}
                 onClick={() =>
                   handleSendMessage("کلاس‌های روز شنبه چه ساعتی هستند؟")
@@ -226,6 +353,7 @@ useEffect(() => {
                 کلاس‌های روز شنبه چه ساعتی هستند؟
               </button>
               <button
+                type="button"
                 className={styles.chip}
                 onClick={() =>
                   handleSendMessage("برای انتخاب واحد رشته ریاضی کمکم کن")
@@ -245,36 +373,23 @@ useEffect(() => {
                 }
               >
                 {msg.sender === "bot" && (
-                  <div className={styles.feedAvatar}>🎓</div>
+                  <div className={styles.feedAvatar}>
+                    {renderRaziLogo("small")}
+                  </div>
                 )}
                 <div
                   className={
                     msg.sender === "user" ? styles.userBubble : styles.botBubble
                   }
-                  style={{ whiteSpace: "pre-wrap" }}
                 >
-                  {/* نمایش تصاویر ارسال شده توسط کاربر */}
                   {msg.imagePreviews && msg.imagePreviews.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        flexWrap: "wrap",
-                        marginBottom: "10px",
-                      }}
-                    >
+                    <div className={styles.sentImagesGrid}>
                       {msg.imagePreviews.map((src, imgIdx) => (
                         <img
                           key={imgIdx}
                           src={src}
                           alt={`تصویر ارسالی ${imgIdx + 1}`}
-                          style={{
-                            maxWidth: "180px",
-                            maxHeight: "180px",
-                            borderRadius: "8px",
-                            objectFit: "cover",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                          }}
+                          className={styles.sentImageThumb}
                         />
                       ))}
                     </div>
@@ -283,105 +398,42 @@ useEffect(() => {
                 </div>
               </div>
             ))}
+
             {loading && (
               <div className={styles.botRow}>
-                <div className={styles.feedAvatar}>🎓</div>
-                <div className={styles.botBubble}>
-                  در حال بررسی فایل‌ها و تنظیم پاسخ بدون تداخل...
+                <div className={styles.feedAvatar}>
+                  {renderRaziLogo("small")}
+                </div>
+                <div className={`${styles.botBubble} ${styles.loadingBubble}`}>
+                  در حال بررسی اطلاعات و تنظیم پاسخ بدون تداخل...
                 </div>
               </div>
             )}
+            <div ref={chatEndRef} />
           </div>
         )}
       </div>
 
-      <footer className={styles.footer}>
-        {/* نوار نمایش تصاویر انتخاب شده (پیش از ارسال) */}
+      {/* ================= بخش کادر ارسال پیام ================= */}
+      <div className={styles.chatComposer}>
         {selectedImages.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              padding: "8px 12px",
-              marginBottom: "8px",
-              borderRadius: "12px",
-              backgroundColor:
-                theme === "dark"
-                  ? "rgba(30, 41, 59, 0.85)"
-                  : "rgba(241, 245, 249, 0.95)",
-              border:
-                theme === "dark"
-                  ? "1px solid rgba(59, 130, 246, 0.4)"
-                  : "1px solid rgba(37, 99, 235, 0.25)",
-              maxWidth: "850px",
-              width: "100%",
-              marginInline: "auto",
-              direction: "rtl",
-              overflowX: "auto",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                color: theme === "dark" ? "#93c5fd" : "#1d4ed8",
-                whiteSpace: "nowrap",
-              }}
-            >
+          <div className={styles.selectedImagesBar}>
+            <span className={styles.selectedImagesCount}>
               تصاویر پیوست‌شده ({selectedImages.length}):
             </span>
             {selectedImages.map((img) => (
-              <div
-                key={img.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background:
-                    theme === "dark"
-                      ? "rgba(15, 23, 42, 0.8)"
-                      : "rgba(255, 255, 255, 0.9)",
-                  padding: "4px 8px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(148, 163, 184, 0.3)",
-                  flexShrink: 0,
-                }}
-              >
+              <div key={img.id} className={styles.selectedImageChip}>
                 <img
                   src={img.preview}
                   alt={img.name}
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    objectFit: "cover",
-                    borderRadius: "6px",
-                  }}
+                  className={styles.selectedImagePreview}
                 />
-                <span
-                  style={{
-                    fontSize: "0.78rem",
-                    maxWidth: "110px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {img.name}
-                </span>
+                <span className={styles.selectedImageName}>{img.name}</span>
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(img.id)}
                   title="حذف این تصویر"
-                  style={{
-                    background: "transparent",
-                    color: "#ef4444",
-                    border: "none",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    fontSize: "0.9rem",
-                    padding: "0 2px",
-                  }}
+                  className={styles.removeImageBtn}
                 >
                   ✕
                 </button>
@@ -390,16 +442,7 @@ useEffect(() => {
           </div>
         )}
 
-       <div
-          className={styles.inputContainer}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "10px",
-            direction: "rtl",
-          }}
-        >
+        <div className={styles.inputContainer}>
           {/* اینپوت مخفی انتخاب فایل */}
           <input
             type="file"
@@ -410,24 +453,14 @@ useEffect(() => {
             style={{ display: "none" }}
           />
 
-          {/* ۱. دکمه سنجاق پیوست تصویر (اولین المان در حالت راست‌به‌چپ = سمت راست) */}
+          {/* ۱. دکمه سنجاق پیوست تصویر (سمت راست) */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={loading}
+            className={styles.attachBtn}
             title="پیوست تصاویر گزارش ۲۷۲ گلستان (امکان انتخاب همزمان چند عکس)"
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: loading ? "not-allowed" : "pointer",
-              color: theme === "dark" ? "#cbd5e1" : "#475569",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0.4rem 0.6rem",
-              borderRadius: "8px",
-              flexShrink: 0,
-            }}
+            aria-label="پیوست تصویر"
           >
             <svg
               width="20"
@@ -443,31 +476,25 @@ useEffect(() => {
             </svg>
           </button>
 
-          {/* ۲. باکس تایپ متن (در وسط قرار می‌گیرد) */}
+          {/* ۲. باکس تایپ متن (وسط) */}
           <input
+            ref={textInputRef}
             type="text"
             className={styles.inputBox}
             placeholder="پیام خود را بنویسید یا عکس‌های گزارش ۲۷۲ را آپلود کنید..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              textAlign: "right",
-            }}
           />
 
-          {/* ۳. دکمه ارسال (آخرین المان در حالت راست‌به‌چپ = سمت چپ) */}
+          {/* ۳. دکمه ارسال (سمت چپ) */}
           <button
+            type="button"
             className={styles.sendBtn}
             onClick={() => handleSendMessage()}
             disabled={loading}
             title="ارسال پیام"
-            style={{
-              position: "static",
-              flexShrink: 0,
-            }}
+            aria-label="ارسال پیام"
           >
             <svg
               width="18"
@@ -482,10 +509,75 @@ useEffect(() => {
             </svg>
           </button>
         </div>
+
         <p className={styles.footerNote}>
           پاسخ‌ها بر اساس اطلاعات رسمی دروس و قوانین بدون تداخل تولید می‌شوند.
         </p>
-      </footer>
-    </main>
+      </div>
+
+      {/* ================= پنجره مودال راهنمای کارت‌ها ================= */}
+      {activeGuide && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setActiveGuide(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guide-modal-title"
+        >
+          <div
+            className={styles.modalCard}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitleGroup}>
+                <span className={styles.guideRedBadge}>راهنما</span>
+                <h3 id="guide-modal-title" className={styles.modalTitle}>
+                  {activeGuide.icon} {activeGuide.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveGuide(null)}
+                className={styles.modalCloseBtn}
+                aria-label="بستن راهنما"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p className={styles.modalDesc}>{activeGuide.description}</p>
+
+              <ul className={styles.modalBullets}>
+                {activeGuide.bullets.map((point, idx) => (
+                  <li key={idx}>{point}</li>
+                ))}
+              </ul>
+
+              <div className={styles.samplesSection}>
+                <div className={styles.samplesHeader}>
+                  <span>نمونه سوال:</span>
+                  <span className={styles.samplesHint}>
+                    (برای قرار دادن در کادر پیام کلیک کنید)
+                  </span>
+                </div>
+                <div className={styles.samplesList}>
+                  {activeGuide.samples.map((sample, sIdx) => (
+                    <button
+                      key={sIdx}
+                      type="button"
+                      className={styles.sampleQuestionBtn}
+                      onClick={() => handleUseSamplePrompt(sample)}
+                    >
+                      «{sample}»
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

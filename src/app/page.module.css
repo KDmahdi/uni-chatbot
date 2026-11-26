@@ -1,456 +1,779 @@
+/* ==========================================================================
+   src/app/page.module.css
+   Full-Viewport Fit (Below Header), Mobile-First Responsive, Light & Dark
+   ========================================================================== */
+
 .container {
+  /* Light Theme Tokens */
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f1f5f9;
+  --bg-subtle: #eff6ff;
+  --border-color: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --user-bubble-bg: #2563eb;
+  --user-bubble-text: #ffffff;
+  --bot-bubble-bg: #ffffff;
+  --bot-bubble-text: #1e293b;
+
+  --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 8px 22px rgba(37, 99, 235, 0.1);
+  --shadow-input: 0 6px 24px rgba(15, 23, 42, 0.06);
+
+  /* ارتفاع دقیق فضای زیر هدر ۷۴ پیکسلی تا بدون اسکرول کل باکس چت دیده شود */
+  min-height: calc(100dvh - 74px);
+  width: 100%;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background-color: #f8fafc;
-  font-family: system-ui, -apple-system, sans-serif;
-  direction: rtl;
-  color: #1e293b;
-}
-
-/* هدر */
-.header {
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-.brandTitle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #0f172a;
+.container[data-theme="dark"],
+:global([data-theme="dark"]) .container {
+  --bg-page: #090d16;
+  --bg-surface: #111827;
+  --bg-surface-hover: #1e293b;
+  --bg-subtle: rgba(37, 99, 235, 0.14);
+  --border-color: #1e293b;
+  --border-strong: #334155;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --user-bubble-bg: #2563eb;
+  --user-bubble-text: #ffffff;
+  --bot-bubble-bg: #111827;
+  --bot-bubble-text: #e2e8f0;
+
+  --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 10px 26px rgba(59, 130, 246, 0.18);
+  --shadow-input: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
-.brandIcon {
-  background: #2563eb;
-  color: white;
-  padding: 0.5rem;
-  border-radius: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* ==========================================================================
+   Main Content & Welcome Section
+   ========================================================================== */
 
-.statusWrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
-.statusDot {
-  width: 8px;
-  height: 8px;
-  background-color: #22c55e;
-  border-radius: 50%;
-}
-
-.resetBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: transparent;
-  border: 1px solid #cbd5e1;
-  padding: 0.5rem 1rem;
-  border-radius: 0.75rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: #475569;
-  transition: all 0.2s;
-}
-
-.resetBtn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-/* بدنه اصلی */
 .mainContent {
   flex: 1;
-  max-width: 900px;
   width: 100%;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 1.25rem 1.25rem 0.75rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.mainContentChatActive {
+  justify-content: flex-start;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
 }
 
 .welcomeSection {
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
+/* جایگاه لوگوی دانشگاه رازی */
 .botAvatar {
-  font-size: 3rem;
-  background: #eff6ff;
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-bottom: 0.9rem;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  padding: 8px;
+}
+
+.raziLogoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.raziLogoImgSmall {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .welcomeTitle {
-  font-size: 1.5rem;
+  margin: 0 0 0.45rem;
+  font-size: 1.55rem;
   font-weight: 800;
-  margin-bottom: 0.5rem;
-  color: #0f172a;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  line-height: 1.4;
 }
 
 .welcomeSubtitle {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  max-width: 600px;
+  margin: 0 0 1.4rem;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  max-width: 580px;
+  line-height: 1.7;
 }
 
 .tipLabel {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 1rem;
-  align-self: flex-start;
+  width: 100%;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
 }
 
-/* کارت‌ها */
+/* ==========================================================================
+   4 Guide Cards Grid
+   ========================================================================== */
+
 .cardsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
   width: 100%;
-  margin-bottom: 2rem;
+  margin-bottom: 1.35rem;
 }
 
 .card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  padding: 1.25rem;
-  border-radius: 1rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.15rem 1rem;
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  font-family: inherit;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .card:hover {
-  border-color: #3b82f6;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .cardIcon {
-  font-size: 1.5rem;
-  margin-bottom: 0.75rem;
+  font-size: 1.45rem;
+  line-height: 1;
+  margin-bottom: 0.15rem;
 }
 
 .card h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  color: #1e293b;
+  margin: 0;
+  font-size: 0.93rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.45;
 }
 
 .card p {
-  font-size: 0.8rem;
-  color: #64748b;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.6;
 }
 
+/* ==========================================================================
+   Quick Suggestions Chips
+   ========================================================================== */
+
 .suggestionsTitle {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 0.75rem;
-  align-self: flex-start;
+  width: 100%;
+  text-align: right;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
 }
 
 .chipsRow {
   display: flex;
-  gap: 0.75rem;
   flex-wrap: wrap;
+  gap: 0.55rem;
   width: 100%;
-  margin-bottom: 1rem;
+  justify-content: flex-start;
 }
 
 .chip {
-  background: white;
-  border: 1px solid #cbd5e1;
-  padding: 0.5rem 1rem;
-  border-radius: 2rem;
-  font-size: 0.85rem;
-  color: #334155;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .chip:hover {
-  background: #f1f5f9;
-  border-color: #3b82f6;
-  color: #2563eb;
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: var(--bg-subtle);
 }
 
-/* فید چت */
+/* ==========================================================================
+   Chat Feed
+   ========================================================================== */
+
 .chatFeed {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
   width: 100%;
 }
 
-.userRow, .botRow {
+.userRow,
+.botRow {
   display: flex;
-  gap: 0.75rem;
-  max-width: 80%;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
 }
 
 .userRow {
-  align-self: flex-end;
+  justify-content: flex-start;
 }
 
 .botRow {
-  align-self: flex-start;
+  justify-content: flex-end;
+  flex-direction: row-reverse;
 }
 
 .feedAvatar {
-  font-size: 1.25rem;
-  background: #eff6ff;
   width: 36px;
   height: 36px;
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   flex-shrink: 0;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.userBubble,
+.botBubble {
+  max-width: 78%;
+  padding: 0.85rem 1.1rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .userBubble {
-  background: #2563eb;
-  color: white;
-  padding: 0.85rem 1.25rem;
-  border-radius: 1rem 1rem 0 1rem;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  background-color: var(--user-bubble-bg);
+  color: var(--user-bubble-text);
+  border-bottom-right-radius: 4px;
 }
 
 .botBubble {
-  background: white;
-  color: #1e293b;
-  padding: 0.85rem 1.25rem;
-  border-radius: 1rem 1rem 1rem 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  white-space: pre-line;
+  background-color: var(--bot-bubble-bg);
+  color: var(--bot-bubble-text);
+  border: 1px solid var(--border-color);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--shadow-card);
 }
 
-/* فوتر و اینپوت */
-.footer {
-  padding: 1.5rem 1rem;
-  background: linear-gradient(to top, #f8fafc 80%, rgba(248, 250, 252, 0));
-  position: sticky;
-  bottom: 0;
+.loadingBubble {
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.sentImagesGrid {
   display: flex;
-  flex-direction: column;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.sentImageThumb {
+  max-width: 160px;
+  max-height: 160px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ==========================================================================
+   Bottom Chat Composer (Input Bar)
+   ========================================================================== */
+
+.chatComposer {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0.5rem 1.25rem 1.15rem;
+}
+
+.selectedImagesBar {
+  display: flex;
   align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  width: 100%;
+  overflow-x: auto;
+}
+
+.selectedImagesCount {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.selectedImageChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-page);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.selectedImagePreview {
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.selectedImageName {
+  font-size: 0.76rem;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeImageBtn {
+  background: transparent;
+  color: #ef4444;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0 2px;
 }
 
 .inputContainer {
   display: flex;
-  flex-direction: row-reverse;
-  direction: ltr;
-  gap: 8px;
   align-items: center;
-  background: white;
-  border: 1px solid #cbd5e1;
-  border-radius: 2rem;
-  padding: 0.5rem 0.5rem 0.5rem 1rem;
-  max-width: 800px;
+  justify-content: space-between;
+  gap: 10px;
+  direction: rtl;
   width: 100%;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 9999px;
+  padding: 0.45rem 0.65rem;
+  box-shadow: var(--shadow-input);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .inputContainer:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.attachBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.attachBtn:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  color: var(--accent);
+}
+
+.attachBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .inputBox {
   flex: 1;
   min-width: 0;
-  text-align: right;
   border: none;
   outline: none;
-  font-size: 0.95rem;
   background: transparent;
-  color: #1e293b;
-  direction: rtl;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 0.35rem 0.25rem;
+  text-align: right;
 }
 
 .inputBox::placeholder {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .sendBtn {
-  background: #2563eb;
-  color: white;
-  border: none;
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  border: none;
+  background-color: var(--accent);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
   flex-shrink: 0;
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.sendBtn:hover {
-  background: #1d4ed8;
+.sendBtn:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  transform: scale(1.04);
 }
 
 .sendBtn:disabled {
-  background: #94a3b8;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .footerNote {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.75rem;
+  margin: 0.55rem 0 0;
   text-align: center;
-}
-.logo{
-  width: 40px;
-  height: 50px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
+/* ==========================================================================
+   Guide Modal (پنجره راهنمای کارت‌ها)
+   ========================================================================== */
 
-
-
-
-
-/* ================================================= */
-/* تنظیمات حالت دارک مود (بدون دستکاری کدهای قبلی) */
-/* ================================================= */
-
-.container[data-theme="dark"] {
-  background-color: #0b0f19;
-  color: #f1f5f9;
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background-color: rgba(6, 10, 19, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.18s ease-out;
 }
 
-.container[data-theme="dark"] .header {
-  background-color: rgba(15, 23, 42, 0.85);
-  border-bottom-color: #1e293b;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.container[data-theme="dark"] .brandTitle {
-  color: #f8fafc;
+.modalCard {
+  width: 100%;
+  max-width: 520px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 1.4rem;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.35);
 }
 
-.container[data-theme="dark"] .resetBtn {
-  border-color: #334155;
-  color: #cbd5e1;
-  background-color: #1e293b;
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.9rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.container[data-theme="dark"] .resetBtn:hover {
-  background-color: #334155;
-  color: #ffffff;
+.modalTitleGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
-.container[data-theme="dark"] .welcomeTitle {
-  color: #f8fafc;
+.guideRedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.22rem 0.7rem;
+  border-radius: 9999px;
+  background-color: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
-.container[data-theme="dark"] .welcomeSubtitle {
-  color: #94a3b8;
+.modalTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
-.container[data-theme="dark"] .tipLabel,
-.container[data-theme="dark"] .suggestionsTitle {
-  color: #cbd5e1;
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.container[data-theme="dark"] .botAvatar {
-  background: #1e293b;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+.modalCloseBtn:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
 }
 
-.container[data-theme="dark"] .card {
-  background: #131b2e;
-  border-color: #1e293b;
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  text-align: right;
 }
 
-.container[data-theme="dark"] .card:hover {
-  border-color: #3b82f6;
-  background: #17233d;
+.modalDesc {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
 }
 
-.container[data-theme="dark"] .card h3 {
-  color: #f8fafc;
+.modalBullets {
+  margin: 0;
+  padding-right: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.84rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
-.container[data-theme="dark"] .card p {
-  color: #94a3b8;
+.samplesSection {
+  margin-top: 0.25rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
-.container[data-theme="dark"] .chip {
-  background: #131b2e;
-  border-color: #334155;
-  color: #e2e8f0;
+.samplesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.container[data-theme="dark"] .chip:hover {
-  background: #1e293b;
-  border-color: #60a5fa;
-  color: #60a5fa;
+.samplesHint {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-.container[data-theme="dark"] .botBubble {
-  background: #131b2e;
-  color: #f1f5f9;
-  border-color: #1e293b;
+.samplesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.container[data-theme="dark"] .feedAvatar {
-  background: #1e293b;
+.sampleQuestionBtn {
+  width: 100%;
+  text-align: right;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  background-color: var(--bg-page);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease,
+    color 0.2s ease;
 }
 
-.container[data-theme="dark"] .footer {
-  background: linear-gradient(to top, #0b0f19 80%, rgba(11, 15, 25, 0));
+.sampleQuestionBtn:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-subtle);
+  color: var(--accent);
 }
 
-.container[data-theme="dark"] .inputContainer {
-  background: #131b2e;
-  border-color: #334155;
+/* ==========================================================================
+   Responsive Breakpoints (Tablet & Mobile)
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .cardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.container[data-theme="dark"] .inputBox {
-  color: #f8fafc;
+@media (max-width: 640px) {
+  /* هماهنگ با ارتفاع ۶۸ پیکسلی هدر در موبایل */
+  .container {
+    min-height: calc(100dvh - 68px);
+  }
+
+  .mainContent {
+    padding: 1rem 0.9rem 0.5rem;
+  }
+
+  .botAvatar {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.65rem;
+  }
+
+  .welcomeTitle {
+    font-size: 1.2rem;
+  }
+
+  .welcomeSubtitle {
+    font-size: 0.82rem;
+    margin-bottom: 1rem;
+  }
+
+  .tipLabel {
+    font-size: 0.8rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .cardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+  }
+
+  .card {
+    padding: 0.85rem 0.75rem;
+    border-radius: 13px;
+    gap: 0.3rem;
+  }
+
+  .cardIcon {
+    font-size: 1.25rem;
+  }
+
+  .card h3 {
+    font-size: 0.83rem;
+  }
+
+  .card p {
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  .suggestionsTitle {
+    font-size: 0.78rem;
+  }
+
+  .chip {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .userBubble,
+  .botBubble {
+    max-width: 88%;
+    font-size: 0.86rem;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .chatComposer {
+    padding: 0.45rem 0.85rem 0.85rem;
+  }
+
+  .inputContainer {
+    padding: 0.35rem 0.5rem;
+    gap: 6px;
+  }
+
+  .inputBox {
+    font-size: 0.84rem;
+  }
+
+  .attachBtn,
+  .sendBtn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .footerNote {
+    font-size: 0.68rem;
+  }
+
+  .modalCard {
+    padding: 1.15rem;
+    border-radius: 15px;
+  }
 }
 
-.container[data-theme="dark"] .inputBox::placeholder {
-  color: #64748b;
-}
-
-.container[data-theme="dark"] .footerNote {
-  color: #64748b;
+@media (max-width: 360px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
 }
